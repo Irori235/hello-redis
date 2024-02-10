@@ -1,0 +1,28 @@
+version: "3"
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      REDIS_ADDR: redis:6379
+      REDIS_PWD: pass
+    tty: true
+    depends_on:
+      redis:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./
+
+  redis:
+    image: redis:latest
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 2s
+      timeout: 1s
+      retries: 10

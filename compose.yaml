@@ -8,17 +8,13 @@ services:
     environment:
       REDIS_ADDR: redis:6379
       REDIS_PWD: pass
-    tty: true
     depends_on:
       redis:
         condition: service_healthy
-    develop:
-      watch:
-        - action: rebuild
-          path: ./
 
   redis:
     image: redis:latest
+    command: ["redis-server", "--requirepass", "pass"]
     expose:
       - "6379"
     healthcheck:

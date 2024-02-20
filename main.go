@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	goredis "github.com/redis/go-redis/v9"
 )
@@ -17,22 +18,27 @@ func main() {
 		DB:       0,
 	})
 
-	if err := redis.Ping(ctx).Err(); err != nil {
-		panic(err)
-	}
+	// Subscribe
+	go func() {
+		pubsub := redis.Subscribe(ctx, "messages")
+		defer pubsub.Close()
 
-	defer redis.Close()
+		ch := pubsub.Channel()
+		for msg := range ch {
+			fmt.Println("Received message:", msg.Payload)
+		}
+	}()
 
-	cmd := redis.Set(ctx, "key", "value", 0)
+	// Publish
+	time.Sleep(2 * time.Second)
+	go func() {
+		err := redis.Publish(ctx, "messages", "Hello from go-redis!").Err()
+		if err != nil {
+			fmt.Println("Publish error:", err)
+			return
+		}
+	}()
 
-	if err := cmd.Err(); err != nil {
-		panic(err)
-	}
-
-	val, err := redis.Get(ctx, "key").Result()
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("key", val)
+	// Wait
+	time.Sleep(5 * time.Second)
 }
